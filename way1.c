@@ -1,9 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "./headers/utils.h"
+#include "./include/os.h"
+#include "./include/print.h"
+#include "./include/utils.h"
+
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "./headers/stb_image_write.h"
+#include "./include/stb_image_write.h"
 
 void backgroundSubtraction(char const *background_path, char const *foreground_path, char const *new_background_path)
 {
@@ -22,10 +25,7 @@ void backgroundSubtraction(char const *background_path, char const *foreground_p
         !(height_foreground == height_background && height_foreground == height_new_background) ||
         !(channel_foreground == channel_background && channel_foreground == channel_new_background))
     {
-        red();
-        puts("Size of all input images must match");
-        reset();
-        return;
+        error("Size of all input images must match");
     }
 
     // fix varibles' names
@@ -33,19 +33,15 @@ void backgroundSubtraction(char const *background_path, char const *foreground_p
     int width = width_foreground;
     int channel = channel_foreground;
 
-    // check dir
-    if (!pathExists("results"))
-    {
-        makeDir("results");
-    }
+    makeDir("results");
 
     unsigned char *subtracted_color = uc_arraysAbsoluteDifference_1d(foreground, background, height * width * channel);
     stbi_write_png("results/0_subtractedColor.png", width, height, channel, subtracted_color, width * channel);
 
-    unsigned char *greyscale = uc_grayscaleGammaCompression_1d(subtracted_color, width, height, channel);
-    stbi_write_png("results/1_greyscale.png", width, height, 1, greyscale, width);
+    unsigned char *grayscale = uc_grayscaleGammaCompression_1d(subtracted_color, width, height, channel);
+    stbi_write_png("results/1_grayscale.png", width, height, 1, grayscale, width);
 
-    unsigned char *binaryMask = binaryMaskByGreyscale(greyscale, width * height, 70, 0, 255);
+    unsigned char *binaryMask = binaryMaskByGreyscale(grayscale, width * height, 70, 0, 255);
     stbi_write_png("results/2_binaryMask.png", width, height, 1, binaryMask, width);
 
     unsigned char *result = mergeImages(foreground, new_background, binaryMask, width, height, channel);
